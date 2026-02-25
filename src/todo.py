@@ -83,6 +83,11 @@ class TodoApp(ft.Column):
         self.new_task = ft.TextField(hint_text="Whats needs to be done?", expand=True)
         self.tasks = ft.Column()
 
+        stored_tasks = self.page.client_storage.get("tasks")
+        if stored_tasks:
+            load_tasks()
+
+
         self.filter = ft.TabBar(
             scrollable=False,
             tabs=[
@@ -149,6 +154,7 @@ class TodoApp(ft.Column):
 
 
 def main(page: ft.Page):
+
     page.title = "To-Do App"
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
     page.update()
@@ -157,7 +163,15 @@ def main(page: ft.Page):
     app = TodoApp()
 
     # add application's root control to the page
+    app.page = page     # adicionar acesso do Todoapp a page
     page.add(app)
+
+
+def load_tasks():
+    #Mekie vasco do futuro. se fores ao chat do chatgpt tens la o que ele acha que deves fazer mas basicamente eu gostava so de descobrir que tipo de formataçãod e dados o get dos dados salvos devolve para poder aceder ao mambo
+    # ou seja é descobrir isso, aceder um a um e criar uma task com esse mambo e deve provavelmente criar sozinho
+
+    pass
 
 
 ft.run(main)
