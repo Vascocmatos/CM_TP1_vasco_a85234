@@ -57,7 +57,6 @@ class Task(ft.Column):
         )
         self.controls = [self.display_view, self.edit_view]
 
-    # Keep your event handlers below (edit_clicked, save_clicked, etc.)
     def edit_clicked(self, e):
         self.edit_name.value = self.display_task.label
         self.display_view.visible = False
@@ -76,3 +75,20 @@ class Task(ft.Column):
 
     def delete_clicked(self, e):
         self.on_delete(self)
+
+    def to_dict(self):
+        return {
+            "task_name": self.display_task.label,
+            "completed": self.completed,
+        }
+
+    @staticmethod
+    def from_dict(data, on_status_change, on_delete):
+        task = Task(
+            task_name=data["task_name"],
+            on_status_change=on_status_change,
+            on_delete=on_delete,
+        )
+        task.completed = data["completed"]
+        task.display_task.value = data["completed"]
+        return task

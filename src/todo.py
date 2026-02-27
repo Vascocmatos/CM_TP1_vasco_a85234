@@ -6,12 +6,10 @@ def main(page: ft.Page):
     page.title = "To-Do App"
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
     page.update()
+    
+    # criação da instacia atual
+    app = TodoApp(page)
 
-    # create application instance
-    app = TodoApp()
-
-    # add application's root control to the page
-    # DO NOT manually assign app.page = page
     page.add(app)
 
 ft.app(target=main)
