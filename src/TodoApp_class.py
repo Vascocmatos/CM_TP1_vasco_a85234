@@ -2,7 +2,7 @@ from dataclasses import field
 from typing import Callable
 
 import flet as ft
-
+from Task_class import Task
 
 
 class TodoApp(ft.Column):
