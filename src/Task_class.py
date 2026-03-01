@@ -2,7 +2,7 @@ from dataclasses import field
 from typing import Callable
 
 import flet as ft
-
+save_data = []  # This will hold the tasks to be saved
 
 class Task(ft.Column):
     def __init__(self, task_name, on_status_change, on_delete):
@@ -62,17 +62,51 @@ class Task(ft.Column):
         self.edit_name.value = self.display_task.label
         self.display_view.visible = False
         self.edit_view.visible = True
+        print("edit clicked")  # Debug print
         self.update()
 
     def save_clicked(self, e):
         self.display_task.label = self.edit_name.value
         self.display_view.visible = True
         self.edit_view.visible = False
+        print("save clicked")  # Debug print
+
+        save_data.remove(self.task_name)  # Remove the old task name from save_data
+        self.task_name = self.edit_name.value  # Update the task name
+        save_data.append(self.display_task.label)  # Add the new task name to save_data
+        print(f"Updated save_data: {save_data}")  # Debug print
+        self.update_local_storage()  # Update local storage with the new save_data
+
+
         self.update()
 
     def status_changed(self, e):
         self.completed = self.display_task.value
         self.on_status_change()
+        print("status changed")  # Debug print
+
+
+
 
     def delete_clicked(self, e):
         self.on_delete(self)
+        print("delete clicked")  # Debug print
+        save_data.remove(self.task_name)  # Remove the task name from save_data when deleted
+        print(f"Removed task: {self.task_name}")  # Debug print 
+        self.update_local_storage()  # Update local storage with the new save_data
+
+
+
+    async def update_local_storage(self):
+        await ft.SharedPreferences().set("tasks", save_data)  # Example of saving to local storage
+        pass
+
+    async def load_from_local_storage(self):
+        # This method can be called to load tasks from local storage into save_data
+        # You can implement the logic to load from local storage here
+        loaded_tasks = await ft.SharedPreferences().get("tasks")  # Example of loading from local storage
+        if loaded_tasks:
+            save_data.extend(loaded_tasks)  # Load tasks into save_data
+            print(f"Loaded tasks: {save_data}")  # Debug print
+
+        pass

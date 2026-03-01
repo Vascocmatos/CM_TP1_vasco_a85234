@@ -2,7 +2,7 @@ from dataclasses import field
 from typing import Callable
 
 import flet as ft
-from Task_class import Task
+from Task_class import Task, save_data, update_local_storage
 
 
 class TodoApp(ft.Column):
@@ -11,7 +11,6 @@ class TodoApp(ft.Column):
         
         self.new_task = ft.TextField(hint_text="Whats needs to be done?", expand=True)
         self.tasks = ft.Column()
-
 
         self.filter = ft.TabBar(
             scrollable=False,
@@ -49,6 +48,11 @@ class TodoApp(ft.Column):
         ]
 
     def add_clicked(self, e):
+        save_data.append(self.new_task.value)  # Save the new task name before adding
+        print(f"Saved new task: {self.new_task.value}")  # Debug print
+        print(f"Current save_data: {save_data}")  # Debug print
+        self.update_local_storage()  # Update local storage with the new save_data
+
         task = Task(
             task_name=self.new_task.value,
             on_status_change=self.task_status_change,
@@ -76,3 +80,12 @@ class TodoApp(ft.Column):
 
     def tabs_changed(self, e):
         self.update()
+
+
+
+
+    async def load_savedata_csstorage(self):
+        # Implement loading data from storage
+        await ft.SharedPreferences().set("my_key", "my_value")
+
+        pass
