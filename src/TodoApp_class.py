@@ -2,13 +2,13 @@ from dataclasses import field
 from typing import Callable
 
 import flet as ft
-from Task_class import Task, save_data, update_local_storage
+from Task_class import Task, save_data
 
+import json
 
 class TodoApp(ft.Column):
-    def __init__(self): # Changed from 'init' to '__init__'
+    def __init__(self):
         super().__init__() # Call parent constructor
-        
         self.new_task = ft.TextField(hint_text="Whats needs to be done?", expand=True)
         self.tasks = ft.Column()
 
@@ -47,27 +47,42 @@ class TodoApp(ft.Column):
             ),
         ]
 
+        for task_name in save_data:  # Load tasks from save_data on initialization
+            task = Task(
+                task_name=task_name,
+                on_status_change=self.task_status_change,
+                on_delete=self.task_delete,
+            )
+            self.tasks.controls.append(task)
+
     def add_clicked(self, e):
         save_data.append(self.new_task.value)  # Save the new task name before adding
         print(f"Saved new task: {self.new_task.value}")  # Debug print
         print(f"Current save_data: {save_data}")  # Debug print
-        self.update_local_storage()  # Update local storage with the new save_data
 
         task = Task(
             task_name=self.new_task.value,
             on_status_change=self.task_status_change,
             on_delete=self.task_delete,
         )
+        #storage
         self.tasks.controls.append(task)
+        self.page.run_task(self.save_tasks)
+
         self.new_task.value = ""
         self.update()
 
     def task_status_change(self):
+        self.page.run_task(self.save_tasks)
         self.update()
 
     def task_delete(self, task):
         self.tasks.controls.remove(task)
+        #storage
+        self.page.run_task(self.save_tasks)
         self.update()
+
+        
 
     def before_update(self):
         status = self.filter.tabs[self.filter_tabs.selected_index].label
@@ -81,11 +96,6 @@ class TodoApp(ft.Column):
     def tabs_changed(self, e):
         self.update()
 
+    async def save_tasks(self):
+        await self.page.shared_preferences.set("tasks", json.dumps(save_data))
 
-
-
-    async def load_savedata_csstorage(self):
-        # Implement loading data from storage
-        await ft.SharedPreferences().set("my_key", "my_value")
-
-        pass
