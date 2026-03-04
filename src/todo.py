@@ -1,6 +1,7 @@
 import flet as ft
+import Task_class
 from TodoApp_class import TodoApp
-from Task_class import Task, save_data
+
 
 import json
 
@@ -10,9 +11,10 @@ async def main(page: ft.Page):
     
     saved_tasks = await page.shared_preferences.get("tasks")
     if saved_tasks:
-        global save_data
-        save_data = json.loads(saved_tasks)
-
+        print(f"Loaded tasks from storage: {saved_tasks}")  # Debug print
+        Task_class.save_data.clear()  # Clear existing save_data before loading
+        Task_class.save_data.extend(json.loads(saved_tasks))
+        print("RAW STORAGE:", saved_tasks)
     
     page.update()
     page.add(

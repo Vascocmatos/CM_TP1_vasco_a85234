@@ -80,9 +80,7 @@ class TodoApp(ft.Column):
         self.tasks.controls.remove(task)
         #storage
         self.page.run_task(self.save_tasks)
-        self.update()
-
-        
+        self.update()  
 
     def before_update(self):
         status = self.filter.tabs[self.filter_tabs.selected_index].label
