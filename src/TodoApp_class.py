@@ -1,14 +1,12 @@
-from dataclasses import field
-from typing import Callable
-
+# TodoApp_class.py
 import flet as ft
-from Task_class import Task, save_data
-
 import json
+from Task_class import Task, save_data
+from db_manager import save_to_db
 
 class TodoApp(ft.Column):
     def __init__(self):
-        super().__init__() # Call parent constructor
+        super().__init__()
         self.new_task = ft.TextField(hint_text="Whats needs to be done?", expand=True)
         self.tasks = ft.Column()
 
@@ -47,25 +45,29 @@ class TodoApp(ft.Column):
             ),
         ]
 
-        for task_name in save_data:  # Load tasks from save_data on initialization
+        
+        for task_dict in save_data:
             task = Task(
-                task_name=task_name,
+                task_name=task_dict["name"],
+                completed=task_dict["completed"],
                 on_status_change=self.task_status_change,
                 on_delete=self.task_delete,
             )
             self.tasks.controls.append(task)
 
     def add_clicked(self, e):
-        save_data.append(self.new_task.value)  # Save the new task name before adding
-        print(f"Saved new task: {self.new_task.value}")  # Debug print
-        print(f"Current save_data: {save_data}")  # Debug print
+        if not self.new_task.value:
+            return
+
+        new_task_dict = {"name": self.new_task.value, "completed": False}
+        save_data.append(new_task_dict)
 
         task = Task(
             task_name=self.new_task.value,
+            completed=False,
             on_status_change=self.task_status_change,
             on_delete=self.task_delete,
         )
-        #storage
         self.tasks.controls.append(task)
         self.page.run_task(self.save_tasks)
 
@@ -78,7 +80,6 @@ class TodoApp(ft.Column):
 
     def task_delete(self, task):
         self.tasks.controls.remove(task)
-        #storage
         self.page.run_task(self.save_tasks)
         self.update()  
 
@@ -91,9 +92,7 @@ class TodoApp(ft.Column):
                 or (status == "completed" and task.completed)
             )
 
-    def tabs_changed(self, e):
-        self.update()
-
     async def save_tasks(self):
+        
         await self.page.shared_preferences.set("tasks", json.dumps(save_data))
-
+        save_to_db(save_data)
