@@ -1,43 +1,83 @@
 import flet as ft
+import os
+import json
 import Task_class
 from TodoApp_class import TodoApp
-
 from db_manager import load_from_db
-import json
+from dotenv import load_dotenv
 
-# define a função assíncrona principal que será chamada pelo Flet
+load_dotenv()
+
+provider = ft.auth.providers.GitHubOAuthProvider(
+    client_id=os.getenv("GITHUB_CLIENT_ID"),
+    client_secret=os.getenv("GITHUB_CLIENT_SECRET"),
+    redirect_url="http://127.0.0.1:8550/oauth_callback"  # ← obrigatório
+)
+
 async def main(page: ft.Page):
-    # configura o título da janela
     page.title = "To-Do App"
-    # alinha os conteúdos horizontalmente no centro da página
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
-    
-    # tenta carregar tarefas guardadas numa base de dados local (parquet)
-    db_tasks = load_from_db()
-    
-    # lê as tarefas guardadas nas preferências do cliente (shared_preferences)
-    saved_tasks_str = await page.shared_preferences.get("tasks")
-    client_tasks = json.loads(saved_tasks_str) if saved_tasks_str else []
+    page.vertical_alignment = ft.MainAxisAlignment.CENTER
 
-    # limpa a lista de tarefas em Task_class antes de sincronizar
-    Task_class.save_data.clear()
-    # se existirem tarefas na base de dados, usa‑as
-    if db_tasks:
-        Task_class.save_data.extend(db_tasks)
-        print("Sincronizado via Base de Dados Parquet.")
-    # caso contrário, se houver tarefas no armazenamento do cliente, usa‑as
-    elif client_tasks:
-        Task_class.save_data.extend(client_tasks)
-        print("Sincronizado via Client Storage.")
-    
-    # força a atualização da página para refletir os dados carregados
-    page.update()
-    # adiciona o componente principal ao layout dentro de uma SafeArea
-    page.add(
-        ft.SafeArea(
-            content=TodoApp(),
-        )
+    async def load_app_for_user(user_id):
+        page.controls.clear()
+        page.vertical_alignment = ft.MainAxisAlignment.START
+        
+        # Carregar tarefas da base de dados
+        db_tasks = load_from_db()
+
+        # Filtrar apenas tarefas do utilizador atual
+        user_tasks = [t for t in db_tasks if t.get("user_id") == user_id]
+
+        saved_tasks_str = await page.shared_preferences.get(f"tasks_{user_id}")
+        client_tasks = json.loads(saved_tasks_str) if saved_tasks_str else []
+
+        Task_class.save_data.clear()
+
+        if user_tasks:
+            Task_class.save_data.extend(user_tasks)
+        elif client_tasks:
+            Task_class.save_data.extend(client_tasks)
+
+        page.add(ft.SafeArea(content=TodoApp(user_id=user_id)))
+        page.update()
+
+    # Quando o login termina
+    async def on_login(e):
+        if e.error:
+            print(f"Erro no login: {e.error}")
+            return
+        
+        user_id = str(page.auth.user.id)
+        await load_app_for_user(user_id)
+
+    page.on_login = on_login
+
+    async def login_click(e):
+        await page.login(provider)  # ← Isto é a forma correta agora!
+
+    # Vista de login (igual)
+    login_view = ft.Column(
+        controls=[
+            ft.Icon(ft.Icons.LOCK_OUTLINE, size=60),
+            ft.Text("Gestor de Tarefas", size=30, weight="bold"),
+            ft.ElevatedButton(
+                content=ft.Text("Login com GitHub"),
+                on_click=login_click,
+                icon=ft.Icons.LOGIN
+            )
+        ],
+        horizontal_alignment=ft.CrossAxisAlignment.CENTER
     )
 
-# inicia a aplicação Flet, passando a função main como alvo
-ft.app(target=main)
+    # Se já estiver autenticado (após redirect do GitHub)
+    if page.auth:
+        user_id = str(page.auth.user.id)
+        await load_app_for_user(user_id)
+    else:
+        page.add(login_view)
+
+    page.update()
+
+if __name__ == "__main__":
+    ft.run(main, port=8550)

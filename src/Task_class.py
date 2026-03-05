@@ -6,11 +6,12 @@ from db_manager import save_to_db
 save_data = []  
 
 class Task(ft.Column):
-    def __init__(self, task_name, completed, on_status_change, on_delete):
+    def __init__(self, task_name, completed, user_id, on_status_change, on_delete):
         super().__init__()
 
         self.completed = completed
         self.task_name = task_name
+        self.user_id = user_id  # Novo atributo
         self.on_status_change = on_status_change
         self.on_delete = on_delete
 
@@ -65,9 +66,9 @@ class Task(ft.Column):
         self.update()
 
     def save_clicked(self, e):
-
         for task in save_data:
-            if task["name"] == self.task_name:
+            # Garante que só edita a tarefa correspondente ao utilizador atual
+            if task["name"] == self.task_name and task.get("user_id") == self.user_id:
                 task["name"] = self.edit_name.value
                 break
 
@@ -83,7 +84,7 @@ class Task(ft.Column):
         self.completed = self.display_task.value
 
         for task in save_data:
-            if task["name"] == self.task_name:
+            if task["name"] == self.task_name and task.get("user_id") == self.user_id:
                 task["completed"] = self.completed
                 break
                 
@@ -91,13 +92,13 @@ class Task(ft.Column):
 
     def delete_clicked(self, e):
         global save_data
-
-        save_data = [t for t in save_data if t["name"] != self.task_name]
+        # Remove a tarefa correta deste utilizador específico
+        save_data = [t for t in save_data if not (t["name"] == self.task_name and t.get("user_id") == self.user_id)]
         self.on_delete(self)
         self.page.run_task(self.save_tasks)
 
     async def save_tasks(self):
-
-        await self.page.shared_preferences.set("tasks", json.dumps(save_data))
-
+        # O armazenamento local fica isolado por utilizador
+        user_tasks = [t for t in save_data if t.get("user_id") == self.user_id]
+        await self.page.shared_preferences.set(f"tasks_{self.user_id}", json.dumps(user_tasks))
         save_to_db(save_data)
