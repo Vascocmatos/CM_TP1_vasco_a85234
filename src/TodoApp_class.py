@@ -1,7 +1,9 @@
 from dataclasses import field
 from typing import Callable
 import flet as ft
+from Task_class import Task, save_data
 
+<<<<<<< HEAD
 
 import duckdb 
 import os 
@@ -21,9 +23,15 @@ class TodoApp(ft.Column):
         self.db_file = "todo_data.duckdb"
         self.parquet_file = "tasks.parquet"
 
+=======
+import json
+
+class TodoApp(ft.Column):
+    def __init__(self):
+        super().__init__() # Call parent constructor
+>>>>>>> d9d18335b7b4043e33988fffc9773293220521da
         self.new_task = ft.TextField(hint_text="Whats needs to be done?", expand=True)
         self.tasks = ft.Column()
-
 
         self.filter = ft.TabBar(
             scrollable=False,
@@ -60,6 +68,7 @@ class TodoApp(ft.Column):
             ),
         ]
 
+<<<<<<< HEAD
         self.conn = duckdb.connect(self.db_file)
         self.conn.execute("""
             CREATE TABLE IF NOT EXISTS tasks (
@@ -99,22 +108,42 @@ class TodoApp(ft.Column):
             self.tasks.controls.append(task)
 
 
+=======
+        for task_name in save_data:  # Load tasks from save_data on initialization
+            task = Task(
+                task_name=task_name,
+                on_status_change=self.task_status_change,
+                on_delete=self.task_delete,
+            )
+            self.tasks.controls.append(task)
+
+>>>>>>> d9d18335b7b4043e33988fffc9773293220521da
     def add_clicked(self, e):
+        save_data.append(self.new_task.value)  # Save the new task name before adding
+        print(f"Saved new task: {self.new_task.value}")  # Debug print
+        print(f"Current save_data: {save_data}")  # Debug print
+
         task = Task(
             task_name=self.new_task.value,
             on_status_change=self.task_status_change,
             on_delete=self.task_delete,
         )
+        #storage
         self.tasks.controls.append(task)
+        self.page.run_task(self.save_tasks)
+
         self.new_task.value = ""
         self.update()
 
     def task_status_change(self):
+        self.page.run_task(self.save_tasks)
         self.update()
 
     def task_delete(self, task):
         self.tasks.controls.remove(task)
-        self.update()
+        #storage
+        self.page.run_task(self.save_tasks)
+        self.update()  
 
     def before_update(self):
         status = self.filter.tabs[self.filter_tabs.selected_index].label
@@ -127,3 +156,7 @@ class TodoApp(ft.Column):
 
     def tabs_changed(self, e):
         self.update()
+
+    async def save_tasks(self):
+        await self.page.shared_preferences.set("tasks", json.dumps(save_data))
+

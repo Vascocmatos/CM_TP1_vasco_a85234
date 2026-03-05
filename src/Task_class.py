@@ -1,8 +1,9 @@
 from dataclasses import field
+import json
 from typing import Callable
 
 import flet as ft
-
+save_data = []  # This will hold the tasks to be saved
 
 class Task(ft.Column):
     def __init__(self, task_name, on_status_change, on_delete):
@@ -57,23 +58,38 @@ class Task(ft.Column):
         )
         self.controls = [self.display_view, self.edit_view]
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> d9d18335b7b4043e33988fffc9773293220521da
     def edit_clicked(self, e):
         self.edit_name.value = self.display_task.label
         self.display_view.visible = False
         self.edit_view.visible = True
+        print("edit clicked")  # Debug print
         self.update()
 
     def save_clicked(self, e):
         self.display_task.label = self.edit_name.value
         self.display_view.visible = True
         self.edit_view.visible = False
+        print("save clicked")  # Debug print
+
+        save_data.remove(self.task_name)  # Remove the old task name from save_data
+        self.task_name = self.edit_name.value  # Update the task name
+        save_data.append(self.display_task.label)  # Add the new task name to save_data
+        print(f"Updated save_data: {save_data}")  # Debug print
+        self.page.run_task(self.save_tasks)  # Update local storage with the new save_data
+
         self.update()
 
     def status_changed(self, e):
         self.completed = self.display_task.value
         self.on_status_change()
+        print("status changed")  # Debug print
 
     def delete_clicked(self, e):
+<<<<<<< HEAD
         self.on_delete(self)
 
     def to_dict(self):
@@ -92,3 +108,15 @@ class Task(ft.Column):
         task.completed = data["completed"]
         task.display_task.value = data["completed"]
         return task
+=======
+        print("delete clicked")  # Debug print
+        print(f"Deleted task: {self.task_name}")  # Debug print
+        print(f"Current save_data after deletion: {save_data}")  # Debug print
+        save_data.remove(self.task_name)  # Remove the task name from save_data
+        self.on_delete(self)
+        
+        self.page.run_task(self.save_tasks)  # Update local storage with the new save_data
+
+    async def save_tasks(self):
+        await self.page.shared_preferences.set("tasks", json.dumps(save_data))
+>>>>>>> d9d18335b7b4043e33988fffc9773293220521da
