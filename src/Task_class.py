@@ -2,6 +2,8 @@
 import flet as ft
 import json
 from db_manager import save_to_db
+import asyncio
+
 
 save_data = []  
 
@@ -59,6 +61,29 @@ class Task(ft.Column):
         )
         self.controls = [self.display_view, self.edit_view]
 
+
+        # No __init__ da classe Task:
+        self.explosion_gif = ft.Image(
+            src="/explosao.gif", # O Flet procura na pasta 'assets'
+            visible=False,
+            width=100,
+            height=100,
+        )
+
+        self.controls = [
+            ft.Stack(
+                [
+                    self.display_view, # A linha normal da tarefa
+                    self.edit_view,    # A linha de edição
+                    ft.Row(
+                        [self.explosion_gif],
+                        alignment=ft.MainAxisAlignment.CENTER,
+                    ),
+                ]
+            )
+        ]
+
+
     def edit_clicked(self, e):
         self.edit_name.value = self.display_task.label
         self.display_view.visible = False
@@ -90,12 +115,22 @@ class Task(ft.Column):
                 
         self.on_status_change()
 
-    def delete_clicked(self, e):
+    async def delete_clicked(self, e):
         global save_data
-        # Remove a tarefa correta deste utilizador específico
+        
+        # 1. Esconde a tarefa e mostra a explosão
+        self.display_view.visible = False
+        self.explosion_gif.visible = True
+        self.update()
+        
+        # 2. Espera 1 segundo (tempo da animação do GIF)
+        await asyncio.sleep(1) 
+        
+        # 3. Remove a tarefa dos dados e da interface (como tinhas antes)
         save_data = [t for t in save_data if not (t["name"] == self.task_name and t.get("user_id") == self.user_id)]
         self.on_delete(self)
         self.page.run_task(self.save_tasks)
+
 
     async def save_tasks(self):
         # O armazenamento local fica isolado por utilizador

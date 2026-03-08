@@ -92,4 +92,5 @@ async def main(page: ft.Page):
     page.update()
 
 if __name__ == "__main__":
-    ft.run(main, port=8550)
+    # Adicionei o parâmetro assets_dir
+    ft.app(target=main, port=8550, assets_dir="assets")
