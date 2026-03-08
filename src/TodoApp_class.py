@@ -92,9 +92,7 @@ class TodoApp(ft.Column):
         if not self.new_task.value:
             return
 
-        # DEPOIS (correto)
-        new_task_dict = {"user_id": self.user_id, "name": self.new_task.value, "completed": False}
-
+        new_task_dict = {"user_id": self.user_id, "name": self.new_task.value, "completadas": False}
         save_data.append(new_task_dict)
 
         task = Task(
@@ -132,3 +130,4 @@ class TodoApp(ft.Column):
         key = f"tasks_{self.user_id}" if self.user_id else "tasks"
         await self.page.shared_preferences.set(key, json.dumps(save_data))
         save_to_db(save_data)
+        
