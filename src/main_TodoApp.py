@@ -22,11 +22,13 @@ async def main(page: ft.Page):
     async def load_app_for_user(user_id):
         page.controls.clear()
         page.vertical_alignment = ft.MainAxisAlignment.START
-        
-        # Carregar tarefas da base de dados
-        db_tasks = load_from_db()
 
-        # Filtrar apenas tarefas do utilizador atual
+        # Define tema inicial (se ainda não estiver definido)
+        if page.theme_mode is None:
+            page.theme_mode = ft.ThemeMode.LIGHT
+
+        # Carregar tarefas (igual ao que tinhas)
+        db_tasks = load_from_db()
         user_tasks = [t for t in db_tasks if t.get("user_id") == user_id]
 
         saved_tasks_str = await page.shared_preferences.get(f"tasks_{user_id}")
@@ -39,7 +41,17 @@ async def main(page: ft.Page):
         elif client_tasks:
             Task_class.save_data.extend(client_tasks)
 
-        page.add(ft.SafeArea(content=TodoApp(user_id=user_id)))
+        # Criamos o TodoApp primeiro para podermos ajustar o ícone do botão
+        todo_app = TodoApp(user_id=user_id)
+
+        # Ajusta o ícone inicial do botão para ficar correto logo de cara
+        if hasattr(todo_app, "theme_button"):
+            if page.theme_mode == ft.ThemeMode.LIGHT:
+                todo_app.theme_button.icon = ft.Icons.NIGHTS_STAY
+            else:
+                todo_app.theme_button.icon = ft.Icons.WB_SUNNY
+
+        page.add(ft.SafeArea(content=todo_app))
         page.update()
 
     # Quando o login termina
@@ -61,11 +73,11 @@ async def main(page: ft.Page):
         controls=[
             ft.Icon(ft.Icons.LOCK_OUTLINE, size=60),
             ft.Text("Gestor de Tarefas", size=30, weight="bold"),
-            ft.ElevatedButton(
+            ft.FilledButton(
                 content=ft.Text("Login com GitHub"),
                 on_click=login_click,
                 icon=ft.Icons.LOGIN
-            )
+                )
         ],
         horizontal_alignment=ft.CrossAxisAlignment.CENTER
     )

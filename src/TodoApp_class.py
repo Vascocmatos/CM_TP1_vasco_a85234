@@ -1,23 +1,41 @@
-# TodoApp_class.py
 import flet as ft
 import json
 from Task_class import Task, save_data
 from db_manager import save_to_db
-from Task_class import Task, save_data
 
 class TodoApp(ft.Column):
-    def __init__(self, user_id=None): # Adicionado user_id
+    def __init__(self, user_id=None):
         super().__init__()
         self.user_id = user_id
         self.new_task = ft.TextField(hint_text="Whats needs to be done?", expand=True)
         self.tasks = ft.Column()
 
+        # ====================== BOTÃO DE TEMA ======================
+        self.theme_button = ft.IconButton(
+            icon=ft.Icons.NIGHTS_STAY,
+            tooltip="Alternar modo claro/escuro",
+            on_click=self.toggle_theme,
+        )
+
+        self.header = ft.Row(
+            controls=[
+                ft.Text("Gestor de Tarefas", size=20, weight="bold"),
+                ft.Row(
+                    controls=[self.theme_button],
+                    expand=True,
+                    alignment=ft.MainAxisAlignment.END,
+                ),
+            ],
+            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+        )
+        # ===========================================================
+
         self.filter = ft.TabBar(
             scrollable=False,
             tabs=[
-                ft.Tab(label="all"),
-                ft.Tab(label="active"),
-                ft.Tab(label="completed"),
+                ft.Tab(label="Tudo"),
+                ft.Tab(label="Ativas"),
+                ft.Tab(label="Completadas"),
             ],
         )
 
@@ -30,6 +48,7 @@ class TodoApp(ft.Column):
 
         self.width = 600
         self.controls = [
+            self.header,                    # ← título + botão de tema
             ft.Row(
                 controls=[
                     self.new_task,
@@ -47,7 +66,7 @@ class TodoApp(ft.Column):
             ),
         ]
 
-        # Carrega APENAS as tarefas deste utilizador na interface
+        # Carrega tarefas do utilizador atual
         for task_dict in save_data:
             if task_dict.get("user_id") == self.user_id:
                 task = Task(
@@ -59,12 +78,21 @@ class TodoApp(ft.Column):
                 )
                 self.tasks.controls.append(task)
 
+    def toggle_theme(self, e):
+        """Alterna claro/escuro e muda o ícone"""
+        if self.page.theme_mode == ft.ThemeMode.LIGHT:
+            self.page.theme_mode = ft.ThemeMode.DARK
+            self.theme_button.icon = ft.Icons.WB_SUNNY
+        else:
+            self.page.theme_mode = ft.ThemeMode.LIGHT
+            self.theme_button.icon = ft.Icons.NIGHTS_STAY
+        self.page.update()
+
     def add_clicked(self, e):
         if not self.new_task.value:
             return
 
-        # Associa a nova tarefa ao utilizador
-        new_task_dict = {"user_id": self.user_id, "name": self.new_task.value, "completed": False}
+        new_task_dict = {"user_id": self.user_id, "name": self.new_task.value, "completadas": False}
         save_data.append(new_task_dict)
 
         task = Task(
@@ -87,21 +115,18 @@ class TodoApp(ft.Column):
     def task_delete(self, task):
         self.tasks.controls.remove(task)
         self.page.run_task(self.save_tasks)
-        self.update()  
+        self.update()
 
     def before_update(self):
         status = self.filter.tabs[self.filter_tabs.selected_index].label
         for task in self.tasks.controls:
             task.visible = (
-                status == "all"
-                or (status == "active" and not task.completed)
-                or (status == "completed" and task.completed)
+                status == "Tudo"
+                or (status == "Ativas" and not task.completed)
+                or (status == "Completadas" and task.completed)
             )
 
     async def save_tasks(self):
-        # Grava as tarefas com uma chave única por utilizador
         key = f"tasks_{self.user_id}" if self.user_id else "tasks"
-        
-        # IMPORTANTE: Usamos o save_data que veio do Task_class
         await self.page.shared_preferences.set(key, json.dumps(save_data))
         save_to_db(save_data)
