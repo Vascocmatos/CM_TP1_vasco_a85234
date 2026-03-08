@@ -92,7 +92,9 @@ class TodoApp(ft.Column):
         if not self.new_task.value:
             return
 
-        new_task_dict = {"user_id": self.user_id, "name": self.new_task.value, "completadas": False}
+        # DEPOIS (correto)
+        new_task_dict = {"user_id": self.user_id, "name": self.new_task.value, "completed": False}
+
         save_data.append(new_task_dict)
 
         task = Task(
